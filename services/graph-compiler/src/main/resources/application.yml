@@ -1,0 +1,73 @@
+spring:
+  application:
+    name: graph-compiler
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    consumer:
+      group-id: graph-compiler-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      properties:
+        spring.json.trusted.packages: "com.archforge.graphcompiler.*"
+        max.poll.records: 500
+        max.poll.interval.ms: 300000
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        batch.size: 16384
+        linger.ms: 5
+        compression.type: snappy
+    listener:
+      concurrency: 3
+      ack-mode: manual
+  servlet:
+    multipart:
+      max-request-size: 10MB
+      max-file-size: 10MB
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
+
+server:
+  port: ${SERVER_PORT:8081}
+  shutdown: graceful
+  tomcat:
+    max-http-form-post-size: 10MB
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,loggers
+  endpoint:
+    health:
+      show-details: when-authorized
+  metrics:
+    tags:
+      application: graph-compiler
+      environment: ${ENVIRONMENT:dev}
+
+graph-compiler:
+  kafka:
+    topics:
+      design-submissions: design.submissions
+      simulation-tasks: simulation.tasks
+      simulation-telemetry: simulation.telemetry
+      dead-letter: graph-compiler.dlt
+    consumer:
+      max-poll-records: 500
+      poll-timeout: 5000
+    producer:
+      retries: 3
+      retry-backoff-ms: 1000
+  validation:
+    max-nodes: 500
+    max-edges: 2000
+
+logging:
+  level:
+    com.archforge.graphcompiler: INFO
